@@ -498,6 +498,7 @@
 .list-row__meta,
 /* Aufgaben: die Zeile und ihre Teile, die vorher je 12px trugen */
 .task-card__meta,
+.task-pool-row__meta,
 .kanban-card__meta,
 .due-date,
 .priority-badge,

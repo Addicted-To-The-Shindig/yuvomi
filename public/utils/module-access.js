@@ -154,7 +154,7 @@ import { moduleAccess } from '/permissions.js';
  * dort aendern, hier nachziehen.
  */
 export const SCOPE_MODULES = Object.freeze([
-  { key: 'tasks',        prefixes: ['tasks'] },
+  { key: 'tasks',        prefixes: ['tasks', 'task-pools'] },
   { key: 'shopping',     prefixes: ['shopping'] },
   { key: 'meals',        prefixes: ['meals', 'recipes', 'recipe-providers'] },
   { key: 'pantry',       prefixes: ['pantry'] },

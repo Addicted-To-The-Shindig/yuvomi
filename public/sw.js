@@ -323,6 +323,8 @@ const APP_SHELL = [
   '/components/modal.js',
   '/components/photo-screensaver.js',
   '/components/quick-links-manager.js',
+  '/components/task-pools-manager.js',
+  '/utils/task-pool-ideas.js',
   '/components/task-detail.js',
   '/components/user-multi-select.js',
   '/components/wall-timer.js',

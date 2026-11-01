@@ -2619,3 +2619,56 @@ textarea.task-comment__input::placeholder {
   color: var(--color-text-tertiary);
   font-size: var(--text-sm);
 }
+
+/* --------------------------------------------------------
+ * Manage task pools (D#2254)
+ * -------------------------------------------------------- */
+.task-pool-list {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.task-pool-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.task-pool-row__body {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  flex: 1;
+}
+
+.task-pool-row__name,
+.task-pool-row__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-pool-row__name { font-weight: var(--font-weight-medium); }
+
+.task-pool-row__meta { color: var(--color-text-secondary); }
+
+.task-pool-row--off { opacity: 0.6; }
+
+.task-pool-empty {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.task-pool-add { inline-size: 100%; }
+
+.task-pool-draw {
+  inline-size: 100%;
+  margin-block-end: var(--space-3);
+}

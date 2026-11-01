@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Idea pools draw a task for you.** A pool is a list of loose ideas - "call the family", "10
+  minute tidy-up" - from which Yuvomi draws at random and creates an ordinary task, due today. It
+  lives under "Idea pools" in the tools menu of the tasks page (discussion #2254). A pool is either
+  shared (nobody is assigned, whoever comes first takes the task) or belongs to one member. It draws
+  every day or every N days, on the weekdays you choose, one to five ideas at a time, and "Draw now"
+  does it by hand. A drawn idea rests for a number of days before it can come back, and never while
+  its task is still open. A pool can give its tasks points, and with a time of day it sets the due
+  time and sends a reminder - to the assigned member, or for a shared pool to everyone or only to
+  whoever created the pool. With "Remove an idea once its task is done" an idea is one-time. A pool
+  can draw into a task category of its own, wait with the next idea until its last task is dealt with
+  ("Only draw when none of its tasks is still open", so ignored ideas do not pile up), and draw tasks
+  without a due date. A pool can be paused, and the ideas are kept as one text field, one idea per
+  line; correcting a line keeps the idea, with its cooldown and its open task.
 - **A document can name who it is about.** The document dialog has a new "About" field for one
   household member, and the Documents page can filter by person. The person also gets the expiry
   reminder, along with whoever filed the document, and once if that is the same person. This never

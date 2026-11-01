@@ -21,7 +21,7 @@
 // Pfadsegmente unter /api/v1, die dieses Modul besitzt (mehrere Router können sich
 // ein Modul teilen, z. B. calendar + reminders + birthdays).
 const SCOPE_MODULES = [
-  { key: 'tasks',        prefixes: ['tasks'] },
+  { key: 'tasks',        prefixes: ['tasks', 'task-pools'] },
   { key: 'shopping',     prefixes: ['shopping'] },
   { key: 'meals',        prefixes: ['meals', 'recipes', 'recipe-providers'] },
   { key: 'pantry',       prefixes: ['pantry'] },

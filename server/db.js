@@ -11777,6 +11777,79 @@ const MIGRATIONS = [
       database.exec('UPDATE ics_subscriptions SET etag = NULL, last_modified = NULL');
     },
   },
+  {
+    version: 274,
+    description: 'Task pools: ideas drawn at random into ordinary tasks (D#2254)',
+    // A pool is a list of loose ideas ("call the family") from which the server
+    // draws at random on a schedule and creates an ordinary task.
+    //
+    // Who gets the task: `assigned_to` NULL means the pool is shared - the drawn
+    // task belongs to nobody and whoever comes first takes it. With a person,
+    // exactly that person gets it. CASCADE instead of SET NULL: a personal pool
+    // would otherwise turn into a shared one when the account goes away.
+    //
+    // The schedule: every `interval_days` days, and only on the weekdays of the
+    // mask (bit 0 Monday to bit 6 Sunday, 127 = every day). `last_drawn_on` is
+    // the day of the last draw (household time, YYYY-MM-DD); the interval counts
+    // from it and it keeps the run to one draw per day.
+    //
+    // The drawn task: `category` is its task category (a key of task_categories;
+    // not a foreign key, because a category can be deleted - the draw falls back
+    // to 'misc' then) and `points` its point value. `remind_time` (HH:MM,
+    // household time) sets both its due time and the moment of a reminder; NULL
+    // means no time and no reminder. The GLOB is only a coarse net - "00 to 23"
+    // cannot be said in it - the route validates the exact value. `remind_scope`
+    // is who a SHARED pool reminds: every household member or only its creator.
+    // `no_due_date` leaves the drawn task without a due date (the time then only
+    // sets the reminder), so an ignored idea does not turn into an overdue chore.
+    //
+    // `skip_if_open` keeps a pool from piling up: the scheduled run does not draw
+    // while a task from this pool is still open.
+    //
+    // `retire_done` removes an idea from the pool once its task is done;
+    // otherwise it comes back after `cooldown_days`.
+    //
+    // On the item, `last_drawn_on` is the start of the cooldown and `task_id` is
+    // the task of the last draw: while that is open, the idea does not come up
+    // again. SET NULL, because a deleted task frees the idea.
+    //
+    // Guarded (IF NOT EXISTS) so that a second run on a drifted database does
+    // not fail.
+    up(database) {
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS task_pools (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          name          TEXT    NOT NULL,
+          assigned_to   INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          created_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          draw_count    INTEGER NOT NULL DEFAULT 1 CHECK (draw_count BETWEEN 1 AND 5),
+          cooldown_days INTEGER NOT NULL DEFAULT 30 CHECK (cooldown_days BETWEEN 0 AND 365),
+          interval_days INTEGER NOT NULL DEFAULT 1 CHECK (interval_days BETWEEN 1 AND 365),
+          weekdays      INTEGER NOT NULL DEFAULT 127 CHECK (weekdays BETWEEN 1 AND 127),
+          category      TEXT    NOT NULL DEFAULT 'misc',
+          points        INTEGER NOT NULL DEFAULT 0 CHECK (points BETWEEN 0 AND 10000),
+          remind_time   TEXT    CHECK (remind_time IS NULL OR remind_time GLOB '[0-2][0-9]:[0-5][0-9]'),
+          remind_scope  TEXT    NOT NULL DEFAULT 'all' CHECK (remind_scope IN ('all', 'creator')),
+          retire_done   INTEGER NOT NULL DEFAULT 0 CHECK (retire_done IN (0, 1)),
+          skip_if_open  INTEGER NOT NULL DEFAULT 0 CHECK (skip_if_open IN (0, 1)),
+          no_due_date   INTEGER NOT NULL DEFAULT 0 CHECK (no_due_date IN (0, 1)),
+          enabled       INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+          last_drawn_on TEXT,
+          created_at    TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+        );
+        CREATE TABLE IF NOT EXISTS task_pool_items (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          pool_id       INTEGER NOT NULL REFERENCES task_pools(id) ON DELETE CASCADE,
+          title         TEXT    NOT NULL,
+          last_drawn_on TEXT,
+          task_id       INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+          created_at    TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_task_pool_items_pool ON task_pool_items(pool_id);
+        CREATE INDEX IF NOT EXISTS idx_task_pool_items_task ON task_pool_items(task_id);
+      `);
+    },
+  },
 ];
 
 /**

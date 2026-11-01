@@ -451,6 +451,106 @@ which calendar day an instant belongs to is a question for the display timezone
 it. **The history starts empty** — recording began with this migration, and nothing wrote down what
 was completed before it.
 
+### Task Pools (migration v274, D#2254)
+
+A pool is a list of loose ideas ("call the family", "10 minute tidy-up") from which the server draws
+at random on a schedule and creates an **ordinary task**. Nothing about the drawn task is special: it
+is due today, shows up everywhere tasks show up, carries points like any other, and its completion is
+recorded in the usual way. A pool is not a module of its own. It lives in the tasks module, behind the
+"Idea pools" entry of the tools menu on the tasks page, and follows the tasks permissions and the
+`tasks` token scope (`task-pools` is a prefix of it in `scopes.js`).
+
+**`task_pools`**
+
+| Column | Type | Constraint |
+|--------|------|-----------|
+| name | TEXT | NOT NULL, max 100 |
+| assigned_to | INTEGER | FK → Users (CASCADE delete), nullable - `NULL` means **shared**: the drawn task belongs to nobody and whoever comes first takes it. With a member, exactly that member gets the task. CASCADE rather than SET NULL, so a personal pool does not turn into a shared one when the account goes away |
+| created_by | INTEGER | FK → Users (SET NULL) |
+| draw_count | INTEGER | NOT NULL DEFAULT 1, 1 to 5 - ideas drawn per draw |
+| cooldown_days | INTEGER | NOT NULL DEFAULT 30, 0 to 365 - days an idea rests after being drawn |
+| interval_days | INTEGER | NOT NULL DEFAULT 1, 1 to 365 - days between draws, counted from the last draw |
+| weekdays | INTEGER | NOT NULL DEFAULT 127, 1 to 127 - bit mask of the days a draw may happen, bit 0 Monday to bit 6 Sunday. The API speaks the list `[1..7]`, Monday to Sunday |
+| category | TEXT | NOT NULL DEFAULT `misc` - the task category of every drawn task (a key of `task_categories`). Not a foreign key: a category can be deleted while a pool still names it, because only tasks hold a category back. The draw falls back to `misc` then, and the dialog keeps the vanished key selected rather than silently picking another |
+| points | INTEGER | NOT NULL DEFAULT 0, 0 to 10000 - point value of every drawn task. The dialog starts a new pool with the household's default task points |
+| remind_time | TEXT | nullable `HH:MM`, household time - sets the due time of the drawn task **and** a reminder at that time. `NULL`: no time, no reminder |
+| retire_done | INTEGER | NOT NULL DEFAULT 0 - remove an idea once its task is done |
+| skip_if_open | INTEGER | NOT NULL DEFAULT 0 - the scheduled run does not draw while a task from this pool is still open |
+| no_due_date | INTEGER | NOT NULL DEFAULT 0 - drawn tasks have no due date and no due time; the reminder time still applies |
+| remind_scope | TEXT | NOT NULL DEFAULT `all`, `all` \| `creator` - who a **shared** pool reminds |
+| enabled | INTEGER | NOT NULL DEFAULT 1 - a paused pool is never drawn from |
+| last_drawn_on | TEXT | `YYYY-MM-DD` in household time, the day of the last draw |
+| created_at | TEXT | ISO 8601 |
+
+**`task_pool_items`**
+
+| Column | Type | Constraint |
+|--------|------|-----------|
+| pool_id | INTEGER | FK → Task pools (CASCADE delete), NOT NULL |
+| title | TEXT | NOT NULL, max 100 |
+| last_drawn_on | TEXT | `YYYY-MM-DD`, the day of the last draw - the start of the cooldown |
+| task_id | INTEGER | FK → Tasks (SET NULL) - the task of the last draw. While it is open, the idea is not drawn again; deleting the task frees the idea |
+| created_at | TEXT | ISO 8601 |
+
+A household may hold at most **20** pools, and a pool at most **200** ideas.
+
+**When a pool draws.** A pool is due when it is enabled, today is one of its weekdays, and at least
+`interval_days` days have passed since `last_drawn_on`. The interval counts from the last draw, not
+from a fixed start: a server that was off for three days draws once on startup and counts on from
+there, instead of needing an anchor date that exists nowhere. If the due day falls on a weekday that
+is not chosen, the pool is due on the next chosen one. The run (`services/task-pools-scheduler.js`)
+starts 20 seconds after the server and then every hour, like the other schedulers, and `last_drawn_on`
+keeps it to one draw per pool and day. **An empty draw does not use up the day** - if every idea is
+resting, the next run tries again, and an idea added in the afternoon is drawn that afternoon.
+"Draw now" in the dialog (`POST /task-pools/:id/draw`) draws outside the schedule and counts as the
+draw of the day.
+
+**A pool that does not pile up.** Whoever ignores the daily idea would otherwise find twenty open,
+overdue "impulses" in the list. With `skip_if_open` the scheduled run leaves the pool alone while a task
+from it is open (an archived or deleted one does not count - it was put away). Whoever finishes or
+archives it gets the next idea at the next hourly run, but never two on one day, because a pool is due
+only a day after its last draw. **"Draw now" does not ask:** whoever presses it wants another one.
+`no_due_date` is the other half: a drawn task without a due date does not turn red the next day, at the
+price of not showing in the overview's "today" - it is a switch for that reason, off by default.
+
+**Which ideas may be drawn.** None that is still resting (`last_drawn_on` plus `cooldown_days` is
+after today) and none whose last task is still open. The cooldown starts with the draw, **not** with
+completion - otherwise an ignored idea would never go away, and a completed one would come back the
+next day. The draw itself is a pure function with a replaceable `pick`, like the meal planner's
+`buildRandomMealAssignments`, and draws without replacement.
+
+**The drawn task.** Title of the idea, category `misc`, due today, visible to everyone, with the pool's
+`points`. A personal pool assigns it to its member. With `remind_time`, the task gets that due time and
+a row in `reminders` at that instant (household time converted to naive UTC like every
+`reminders.remind_at`). Recipients: a personal pool reminds its member. A shared pool reminds, by
+`remind_scope`, every household member (`all`) or only the member who created the pool (`creator`);
+if that member is gone, the pool falls back to everyone rather than reminding nobody.
+
+**One-time ideas.** With `retire_done`, an idea leaves the pool once its task is done. An archived or
+deleted task does not count as done - whoever put a task away did not do it, and the idea may come
+back after its cooldown. The removal is lazy: it is not hooked into the task status change (which
+would make the tasks depend on pools) but runs when a pool is drawn from and in the hourly run.
+**Reading a pool never deletes anything** - `GET` merely hides the ideas that are about to go.
+
+**Who may change a pool.** Everyone with access to tasks sees every pool; only the creator, the
+assigned member and an admin may change or delete it (`can_edit` is computed on the server, like for
+the quick links). Deleting a pool leaves the tasks already drawn from it alone.
+
+**Renaming an idea keeps it the same idea.** The dialog keeps the ideas as one text field, one per
+line, and holds the lines against what the server has on save (`utils/task-pool-ideas.js`). A line
+that was edited is a rename - `PUT /task-pools/:id/items/:itemId` on the same row, so the cooldown
+and the link to the task of its last draw stay. Deleting the old idea and adding the corrected one
+would give a fixed typo a clean slate, and it could be drawn again while the old task is still open.
+Removed ideas and new lines are paired by position first (the new line where the removed one stood),
+then in order; what finds no partner stays a plain removal or addition.
+
+API: `GET/POST /api/v1/task-pools`, `PUT/DELETE /api/v1/task-pools/:id`,
+`POST /api/v1/task-pools/:id/items`, `PUT/DELETE /api/v1/task-pools/:id/items/:itemId` and
+`POST /api/v1/task-pools/:id/draw`. Flags (`enabled`, `retire_done`) must be real booleans; a field
+left out of a `PUT` stays as it is. Refusals a user can reach carry a `reason` (#1909):
+`task_pools_pool_not_found`, `task_pools_limit_reached`, `task_pools_items_limit_reached` and
+`task_pools_nothing_to_draw` (409), each with its sentence in all 27 languages.
+
 ### Rewards (migration v70)
 
 Points-and-rewards system. A member earns a task's `points` when the task is marked done (awarded to its assigned members; if unassigned, to the acting user - useful for a wall-mounted kiosk tablet on a single account). Participation is **opt-in per member**; redemptions require **parent/admin approval** by default - an admin can disable this household-wide (`rewards_require_approval` preference, Settings → Modules → Rewards) so redemptions are granted immediately. The Rewards module itself is toggleable in Settings → Modules → Active modules (nav visibility); since R10 the Rewards sheet only shows that state and links there. A member's balance is always `SUM(delta)` over `reward_ledger` - there is no separately stored balance that could drift. Point award is idempotent and reversed when a task leaves the `done` state. The reversal is a booking of its own, not a deletion (#1607, migration v230): the `earn` row stays and a `reversal` row with a negative delta and the same `task_id` takes the booked amount back, so the ledger tells both steps. Whether a task is currently paid out is the net of its `earn` and `reversal` rows per member - above zero means paid, zero means open - and that net carries the idempotence the partial unique index `uniq_reward_earn` used to carry (the index would have swallowed the new award after a reopen). A balance may drop below zero when the reopened task's points are already spent or reserved; the next earnings make up for it, a pending request stays pending for the parents to decide, and the page says so next to the number (`rewards.balanceBelowZero`, plus `rewards.pendingBalanceBelowZero` beside the request for whoever decides). Earnings deleted by versions before v230 are not restored. **A recurring task pays each member once per household day** (#1603): ticking a recurring task off creates its next instance at once, as a new row that can be ticked off again, and the per-task idempotence saw a new task each time. Ticking off stays allowed and keeps the series rolling; only the award is skipped when the member already holds a standing earning of the same series whose booking falls on today in the household timezone (`todayKey()` in `server/utils/timezone.js`). The series is a value, not a reference: `tasks.recurrence_series_id` holds the id of the first occurrence and is copied to every follow-up instance and to every copied subtask when it is created, and each `earn` row stores it as `reward_ledger.series_id`, so the cap asks the ledger directly and still holds after a completed occurrence is deleted (which nulls both `recurrence_origin_id` and the ledger's `task_id`). A task without the value is its own first occurrence; an instance from before v230 that only has `recurrence_origin_id` uses the root of that chain. A reversal points at the earning it takes back (`reward_ledger.reverses_id`), for the same reason. Earnings booked before v230 carry no series and do not count toward the cap. Catching up two missed occurrences of one series on the same day therefore pays once.

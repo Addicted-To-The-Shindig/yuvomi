@@ -51,6 +51,7 @@ import {
   setTaskArchived, toggleSubtaskStatus,
 } from '/components/task-detail.js';
 import { reloadAfterSave } from '/utils/reload-after-save.js';
+import { openTaskPoolsManager } from '/components/task-pools-manager.js';
 import { errorSentence, isAlreadyDeleted, loadErrorSentence } from '/utils/friendly-error.js';
 
 /**
@@ -4183,6 +4184,8 @@ function toolsMenuItems() {
       // die beiden Achsen sind bewusst getrennt, dieselbe Bildsprache haette
       // sie wieder eingeebnet.
       { action: 'manage-tags', label: t('tasks.manageTags'), icon: 'tags' },
+      // Pools of loose ideas from which tasks are drawn at random on a schedule (D#2254).
+      { action: 'manage-pools', label: t('tasks.managePools'), icon: 'shuffle' },
     );
   }
   return items;
@@ -5336,6 +5339,9 @@ function wireToolbar(container) {
         break;
       case 'manage-tags':
         if (!readOnly()) openTagManager(container);
+        break;
+      case 'manage-pools':
+        if (!readOnly()) openTaskPoolsManager({ onChange: () => reloadAfterSave(() => loadTasks(container)) });
         break;
       default:
     }

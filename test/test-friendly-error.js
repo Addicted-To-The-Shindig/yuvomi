@@ -258,6 +258,8 @@ test('jeder Fall hat seinen Satz in jeder Sprache, und der Server nennt ihn', ()
     '../server/routes/housekeeping.js', '../server/routes/rewards.js',
     // Schnellzugriffe (#1909); die echte Antwort misst test:quick-links.
     '../server/routes/quick-links.js',
+    // Task pools (D#2254); a real response is measured by test:task-pools.
+    '../server/routes/task-pools.js',
     // Rezeptdienste in den Kuechen-Einstellungen (#1909); die echte Antwort
     // misst test:recipe-provider-routes.
     '../server/routes/recipe-providers.js',
@@ -333,7 +335,7 @@ test('isGone: nur die bekannten "gibt es nicht mehr"-Gruende, nie der blanke Sta
     'housekeeping_open_session_not_found',
     'rewards_reward_not_found', 'rewards_redemption_not_found',
     'rewards_money_account_not_found', 'rewards_money_plan_not_found',
-    'quick_links_link_not_found',
+    'quick_links_link_not_found', 'task_pools_pool_not_found',
     'recipe_providers_account_not_found',
     'calendar_calendar_not_found', 'calendar_event_not_found', 'calendar_selected_calendar_not_found',
   ].sort());

@@ -219,6 +219,7 @@ const WIPE = [
   'inventory_item_service_log', 'inventory_item_dates',
   'inventory_item_documents', 'inventory_items', 'inventory_locations',
   'reminders',
+  'task_pool_items', 'task_pools',
   'event_assignments', 'task_assignments', 'task_tags', 'task_documents', 'calendar_events', 'tasks',
   'birthdays',
   'expense_activity', 'settlement_entries', 'settlements', 'recurring_expenses',
