@@ -344,6 +344,9 @@ export const CASE_MESSAGES = new Map([
   // Grund ist deshalb ein Erfolg. Die Grenze traegt ihre Zahl (CASE_PARAMS).
   ['quick_links_link_not_found', 'quickLinks.errorLinkGone'],
   ['quick_links_limit_reached', 'quickLinks.errorLimitReached'],
+  // Task pools (D#2254).
+  ['task_pools_pool_not_found', 'taskPools.errorPoolGone'],
+  ['task_pools_limit_reached', 'taskPools.errorLimitReached'],
   // Rezeptdienste in den Kuechen-Einstellungen (#1909). Das private Netz nennt
   // im Satz den Schalter, den der Admin setzen kann - wie bisher der Servertext.
   ['recipe_providers_account_not_found', 'settings.recipeProviderErrorAccountGone'],
@@ -438,6 +441,7 @@ export const CASE_PARAMS = new Map([
   ['health_cycle_import_too_many_rows', ['limit']],
   ['documents_folder_too_deep', ['limit']],
   ['quick_links_limit_reached', ['limit']],
+  ['task_pools_limit_reached', ['limit']],
   ['contacts_name_too_long', ['limit']],
   ['contacts_phone_too_long', ['limit']],
   ['contacts_email_too_long', ['limit']],
@@ -561,6 +565,7 @@ export const GONE_REASONS = new Set([
   'rewards_money_account_not_found',
   'rewards_money_plan_not_found',
   'quick_links_link_not_found',
+  'task_pools_pool_not_found',
   'recipe_providers_account_not_found',
   'calendar_calendar_not_found',
   'calendar_event_not_found',

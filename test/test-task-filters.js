@@ -515,7 +515,7 @@ test('das Werkzeugmenue: Verwalten nur mit Schreibrecht, Auswahl nur in der List
   // der Ansichtsgruppe (view-history, neben Liste und Kanban).
   const views = () => Object.fromEntries(tasks.toolsMenuItems().find((i) => i.group)?.items.map((i) => [i.action, i]) ?? []);
   assert.deepEqual(Object.keys(views()), ['view-list', 'view-kanban', 'view-history']);
-  assert.deepEqual(Object.keys(byAction()), ['open-filters', 'bulk-select', 'sort-mode', 'bulk-archive', 'bulk-tag-add', 'bulk-tag-remove', 'manage-categories', 'manage-tags'],
+  assert.deepEqual(Object.keys(byAction()), ['open-filters', 'bulk-select', 'sort-mode', 'bulk-archive', 'bulk-tag-add', 'bulk-tag-remove', 'manage-categories', 'manage-tags', 'manage-pools'],
     'alles, was vorher als loses Icon im Kopf stand, steht beschriftet im Menue (R23 D13: dazu der Sortiermodus am Finger; #2425: der Filter unter 390px)');
   assert.equal(byAction()['bulk-select'].disabled, false);
   // Ablegen und die Tag-Sammelaktionen passen nicht in die einzeilige Pille

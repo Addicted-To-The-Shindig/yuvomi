@@ -44,10 +44,12 @@ import { startScheduler as startPushScheduler } from './services/push-scheduler.
 import { startScheduler as startMedicationScheduler } from './services/medication-scheduler.js';
 import { startScheduler as startRecipeProviderScheduler } from './services/recipe-provider-sync.js';
 import { startWasteSourceScheduler } from './services/waste-source-scheduler.js';
+import { startTaskPoolScheduler } from './services/task-pools-scheduler.js';
 import { emailService } from './services/email.js';
 import { passwordLoginWarning, OIDC_PASSWORD_SENTINEL } from './services/oidc.js';
 import dashboardRouter from './routes/dashboard.js';
 import tasksRouter from './routes/tasks.js';
+import taskPoolsRouter from './routes/task-pools.js';
 import shoppingRouter from './routes/shopping.js';
 import mealsRouter from './routes/meals.js';
 import recipesRouter from './routes/recipes.js';
@@ -803,6 +805,7 @@ app.use('/api/v1', (req, res, next) => {
 });
 app.use('/api/v1/dashboard', dashboardRouter);
 app.use('/api/v1/tasks', tasksRouter);
+app.use('/api/v1/task-pools', taskPoolsRouter);
 app.use('/api/v1/shopping', shoppingRouter);
 app.use('/api/v1/meals', mealsRouter);
 app.use('/api/v1/recipes', recipesRouter);
@@ -1014,6 +1017,7 @@ const server = app.listen(PORT, BIND_ADDRESS, () => {
   startMedicationScheduler();
   startRecipeProviderScheduler();
   startWasteSourceScheduler();
+  startTaskPoolScheduler();
 });
 
 // --------------------------------------------------------

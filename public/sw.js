@@ -324,6 +324,7 @@ const APP_SHELL = [
   '/components/photo-screensaver.js',
   '/components/quick-links-manager.js',
   '/components/task-detail.js',
+  '/components/task-pools-manager.js',
   '/components/user-multi-select.js',
   '/components/wall-timer.js',
   '/utils/birth-date.js',

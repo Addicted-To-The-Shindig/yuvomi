@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Idea pools draw a task for you.** A pool is a list of loose ideas - "call the family", "10
+  minute tidy-up" - from which Yuvomi draws one at random every day and creates an ordinary task. It
+  lives under "Idea pools" in the tools menu of the tasks page (discussion #2254). A pool is either
+  shared (nobody is assigned, whoever comes first takes the task) or belongs to one member. You
+  choose how many ideas are drawn per day and how many days an idea rests before it can come back,
+  and a pool can be paused. The ideas are kept as one text field, one idea per line.
+
 ## [2.85.0] - 2026-11-04
 
 ### Added

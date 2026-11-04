@@ -6,6 +6,7 @@ import { displaysPaths } from './displays.js';
 import { backupPaths } from './backup.js';
 import { dashboardPaths } from './dashboard.js';
 import { tasksPaths } from './tasks.js';
+import { taskPoolsPaths } from './taskpools.js';
 import { rewardsPaths } from './rewards.js';
 import { shoppingPaths } from './shopping.js';
 import { mealsPaths } from './meals.js';
@@ -46,6 +47,7 @@ export function buildPaths() {
     ...backupPaths(),
     ...dashboardPaths(),
     ...tasksPaths(),
+    ...taskPoolsPaths(),
     ...rewardsPaths(),
     ...shoppingPaths(),
     ...mealsPaths(),

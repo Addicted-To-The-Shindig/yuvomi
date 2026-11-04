@@ -11927,6 +11927,47 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 278,
+    description: 'Task pools: ideas drawn at random into ordinary tasks (D#2254)',
+    // A pool is a list of loose ideas ("call the family") from which the server
+    // draws at random once a day and creates an ordinary task.
+    //
+    // Who gets the task: `assigned_to` NULL means the pool is shared - the drawn
+    // task belongs to nobody and whoever comes first takes it. With a person,
+    // exactly that person gets it. CASCADE instead of SET NULL: a personal pool
+    // would otherwise turn into a shared one when the account goes away.
+    //
+    // `last_drawn_on` is the day of the last draw (household time, YYYY-MM-DD) and
+    // keeps the run to one draw per pool and day. On an idea it is the start of
+    // its rest period: the idea does not come up again for `cooldown_days`.
+    //
+    // Guarded (IF NOT EXISTS) so that a second run on a drifted database does
+    // not fail.
+    up(database) {
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS task_pools (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          name          TEXT    NOT NULL,
+          assigned_to   INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          created_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          draw_count    INTEGER NOT NULL DEFAULT 1 CHECK (draw_count BETWEEN 1 AND 5),
+          cooldown_days INTEGER NOT NULL DEFAULT 30 CHECK (cooldown_days BETWEEN 0 AND 365),
+          enabled       INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
+          last_drawn_on TEXT,
+          created_at    TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+        );
+        CREATE TABLE IF NOT EXISTS task_pool_items (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          pool_id       INTEGER NOT NULL REFERENCES task_pools(id) ON DELETE CASCADE,
+          title         TEXT    NOT NULL,
+          last_drawn_on TEXT,
+          created_at    TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_task_pool_items_pool ON task_pool_items(pool_id);
+      `);
+    },
+  },
 ];
 
 /**
